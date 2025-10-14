@@ -1,7 +1,6 @@
 import {WebSocket} from "ws";
-import { INIT_GAME } from "./messages.js";
+import { INIT_GAME,GAME_OVER,MOVE } from "./messages.js";
 import { Game } from "./Game.js";
-import { MOVE, } from "./messages.js";
 
 export class GameManager{
     private games:Game [];
@@ -21,12 +20,14 @@ export class GameManager{
     }
 
     removeUser(socket: WebSocket){
+        this.users= this.users.filter(user=>user!==socket)
         
     }
 
     private addHandler (socket :WebSocket){
         socket.on("message",(data)=>{
             const message = JSON.parse(data.toString());
+            console.log(message)
 
             if(message.type === INIT_GAME){
                 if(this.pendingUser){
@@ -41,8 +42,9 @@ export class GameManager{
 
             if(message.type=== MOVE){
                 const game = this.games.find(game=> game.player1 === socket || game.player2 === socket);
+                // console.log("reached move backend")
                 if(game){
-                    game.makeMove(socket,message.move);
+                    game.makeMove(socket,message.payload.move);
                 }
             }
         })

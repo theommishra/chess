@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev": "npx tsx src/index.ts",
+    "build": "npx tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -13,6 +15,8 @@
   "dependencies": {
     "@types/ws": "^8.18.1",
     "chess.js": "^1.4.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
     "ws": "^8.18.3"
   }
 }

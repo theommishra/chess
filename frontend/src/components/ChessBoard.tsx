@@ -2,7 +2,9 @@ import type { Color, Square, PieceSymbol } from "chess.js";
 import { useState } from "react";
 // import { WebSocket } from "ws";
 
-export const ChessBoard = ({ board, socket }: {
+export const ChessBoard = ({ chess, board, socket, setBoard }: {
+    chess: any;
+    setBoard: any;
     board: ({
         square: Square;
         type: PieceSymbol;
@@ -16,25 +18,32 @@ export const ChessBoard = ({ board, socket }: {
             board.map((row, i) => {
                 return <div className="flex" key={i}>
                     {row.map((square, j) => {
+                        const squareRepresentation = String.fromCharCode(97 + (j % 8)) + "" + (8 - i) as Square;
                         return <div key={j} onClick={() => {
                             if (!from) {
-                                setFrom(square?.square ?? null);
+                                setFrom(squareRepresentation);
                             }
                             else {
-                                const toSquare = square?.square ?? null;
                                 socket.send(JSON.stringify({
                                     type: "move",
                                     payload:
                                     {
-                                        from,
-                                        to: toSquare
-                            }
+                                        move: {
+                                            from,
+                                            to: squareRepresentation
+                                        }
+                                    }
                                 }))
                                 console.log({
-                                     from,
-                                    to: toSquare
+                                    from,
+                                    to: squareRepresentation
                                 })
                                 setFrom(null);
+                                chess.move({
+                                    from,
+                                    to: squareRepresentation
+                                });
+                                setBoard(chess.board())
                             }
                         }} className={`w-16 h-16 ${(i + j) % 2 == 0 ? 'bg-slate-500' : 'bg-white'}`}>
                             <div className="w-full justify-center flex h-full">
