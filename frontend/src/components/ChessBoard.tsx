@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import type { Square, PieceSymbol, Color } from "chess.js";
 
 // Import piece images from src/pieces
@@ -35,6 +35,7 @@ export const ChessBoard = ({
   board,
   socket,
   setBoard,
+  playerColor
 }: {
   chess: any;
   setBoard: any;
@@ -44,6 +45,7 @@ export const ChessBoard = ({
     color: Color;
   } | null)[][];
   socket: WebSocket;
+  playerColor:String;
 }) => {
   const [from, setFrom] = useState<null | Square>(null);
   const [legalMoves, setLegalMoves] = useState<Square[]>([]);
@@ -53,6 +55,14 @@ export const ChessBoard = ({
     const key = `${piece.color}${piece.type.toUpperCase()}`;
     return pieceImages[key];
   };
+
+  const colorValidator = (pc: Color | undefined) => {
+  if (!pc) return false;
+  if (pc === "w" && playerColor === "white") return true;
+  if (pc === "b" && playerColor === "black") return true;
+  return false;
+};
+
 
   const handleSquareClick = (squareRepresentation: Square, square: any) => {
     // Clicked same square → deselect
@@ -89,7 +99,7 @@ export const ChessBoard = ({
     }
 
     // If clicked on a legal move square → execute move
-    if (legalMoves.includes(squareRepresentation)) {
+    if (legalMoves.includes(squareRepresentation) && colorValidator(chess.get(from)?.color)) {
       try {
         const move = { from, to: squareRepresentation };
         const result = chess.move(move);
