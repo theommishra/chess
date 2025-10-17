@@ -37,6 +37,13 @@ export class Game{
         catch(e){
             return;
         }
+        if(this.moveCount %2 ===1 && socket !== this.player1){
+            return
+        }
+        if(this.moveCount %2 ===0 && socket !== this.player2){
+            return
+        }
+
         if(this.board.isGameOver()){
             this.player1.send(JSON.stringify({
                 type:GAME_OVER,
