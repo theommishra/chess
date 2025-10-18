@@ -35,7 +35,7 @@ export const ChessBoard = ({
   board,
   socket,
   setBoard,
-  playerColor
+  playerColor,
 }: {
   chess: any;
   setBoard: any;
@@ -45,24 +45,25 @@ export const ChessBoard = ({
     color: Color;
   } | null)[][];
   socket: WebSocket;
-  playerColor:String;
+  playerColor: String;
 }) => {
   const [from, setFrom] = useState<null | Square>(null);
-  const [legalMoves, setLegalMoves] = useState<Square[]>([]);
+  const [legalMoves, setLegalMoves] = useState<
+    { to: Square; captured?: PieceSymbol }[]
+  >([]);
 
   const getPieceImage = (piece: { type: PieceSymbol; color: Color } | null) => {
-    if (!piece) return "";
+    if (!piece || !piece.type || !piece.color) return "";
     const key = `${piece.color}${piece.type.toUpperCase()}`;
     return pieceImages[key];
   };
 
   const colorValidator = (pc: Color | undefined) => {
-  if (!pc) return false;
-  if (pc === "w" && playerColor === "white") return true;
-  if (pc === "b" && playerColor === "black") return true;
-  return false;
-};
-
+    if (!pc) return false;
+    if (pc === "w" && playerColor === "white") return true;
+    if (pc === "b" && playerColor === "black") return true;
+    return false;
+  };
 
   const handleSquareClick = (squareRepresentation: Square, square: any) => {
     // Clicked same square → deselect
@@ -74,12 +75,12 @@ export const ChessBoard = ({
 
     // No square selected yet
     if (!from) {
-      if (square) {
+      if (square && colorValidator(chess.get(squareRepresentation)?.color)) {
         setFrom(squareRepresentation);
         // get all legal moves for that piece
         const moves = chess
           .moves({ square: squareRepresentation, verbose: true })
-          .map((m: any) => m.to);
+          .map((m: any) => ({ to: m.to, captured: m.captured }));
         setLegalMoves(moves);
       }
       return;
@@ -93,19 +94,23 @@ export const ChessBoard = ({
       setFrom(squareRepresentation);
       const moves = chess
         .moves({ square: squareRepresentation, verbose: true })
-        .map((m: any) => m.to);
+        .map((m: any) => ({ to: m.to, captured: m.captured }));
       setLegalMoves(moves);
       return;
     }
 
     // If clicked on a legal move square → execute move
-    if (legalMoves.includes(squareRepresentation) && colorValidator(chess.get(from)?.color)) {
+    const move = legalMoves.find((m) => m.to === squareRepresentation);
+    if (move && colorValidator(chess.get(from)?.color)) {
       try {
-        const move = { from, to: squareRepresentation };
-        const result = chess.move(move);
-
+        const result = chess.move({ from, to: move.to });
         if (result) {
-          socket.send(JSON.stringify({ type: "move", payload: { move } }));
+          socket.send(
+            JSON.stringify({
+              type: "move",
+              payload: { move: { from, to: move.to } },
+            })
+          );
           setBoard(chess.board());
         }
       } catch (err) {
@@ -128,7 +133,13 @@ export const ChessBoard = ({
             const isDark = (i + j) % 2 === 1;
             const squareColor = isDark ? "bg-green-700" : "bg-green-300";
             const isSelected = from === squareRepresentation;
-            const isMoveHint = legalMoves.includes(squareRepresentation);
+
+            // Find move info for this square
+            const moveInfo = legalMoves.find(
+              (m) => m.to === squareRepresentation
+            );
+            const isMoveHint = !!moveInfo;
+            const isCaptureMove = moveInfo?.captured;
 
             return (
               <div
@@ -146,9 +157,14 @@ export const ChessBoard = ({
                   />
                 )}
 
-                {/* Move hint dots */}
-                {!square && isMoveHint && (
+                {/* Normal move hint */}
+                {!square && isMoveHint && !isCaptureMove && (
                   <div className="absolute w-4 h-4 bg-black/40 rounded-full"></div>
+                )}
+
+                {/* Capture hint for enemy pieces */}
+                {isCaptureMove && (
+                  <div className="absolute w-14 h-14 border-4 border-red-500/70 rounded-full pointer-events-none"></div>
                 )}
               </div>
             );
